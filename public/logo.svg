@@ -1,0 +1,7 @@
+<svg width="120" height="32" viewBox="0 0 120 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="28" height="28" y="2" rx="6" fill="#141414"/>
+  <path d="M7 16L11 11L14 15L17 12L21 17" stroke="#50C878" stroke-width="2" stroke-linecap="round"/>
+  <text x="36" y="22" font-family="Sora" font-weight="600" font-size="18" fill="#141414">WAYFIELD</text>
+  <text x="36" y="22" font-family="Sora" font-weight="600" font-size="18" fill="#E5E5E5">WAYFIELD</text>
+  <text x="104" y="22" font-family="Inter" font-weight="400" font-size="18" fill="#50C878">/</text>
+</svg>
