@@ -1,4 +1,4 @@
-# Scii — Consumer Setup Guide
+# Scii — Setup Guide
 ### Deploy your own status page in ~10 minutes. No CLI, no servers.
 
 **What you’ll have:** `status.yourdomain.com` showing green/red badges, updating every 60 seconds, free on Cloudflare.
