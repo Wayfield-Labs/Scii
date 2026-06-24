@@ -1,40 +1,199 @@
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    if (url.pathname === "/status") {
-      const data = await env.R2_BUCKET.get("status.json");
-      return new Response(data? await data.text() : '{"monitors":[]}', {
-        headers: {"content-type":"application/json","cache-control":"no-store"}
-      });
+    // API endpoint for status data
+    if (url.pathname === '/api/status') {
+      return handleAPI(env);
     }
 
-    if (url.pathname === "/") {
-      const data = await env.R2_BUCKET.get("status.json");
-      const {lastChecked, monitors=[]} = data? JSON.parse(await data.text()) : {};
-
-      const rows = monitors.map(m => `
-        <div class="flex items-center justify-between p-4 border-b border-zinc-800">
-          <div><div class="font-medium">${m.name}</div><div class="text-xs text-zinc-500">${m.url}</div></div>
-          <div class="flex gap-3 items-center"><span class="text-xs text-zinc-500">${m.responseTime}ms</span>
-          <span class="px-2.5 py-1 rounded-full text-xs ${m.status==='up'?'bg-emerald-500/15 text-emerald-400':'bg-red-500/15 text-red-400'}">${m.status==='up'?'Operational':'Down'}</span></div>
-        </div>`).join("");
-
-      return new Response(`<!doctype html><html><head><title>Scii Status</title><script src="https://cdn.tailwindcss.com"></script><meta name="viewport" content="width=device-width,initial-scale=1"></head><body class="bg-zinc-950 text-zinc-100"><div class="max-w-xl mx-auto p-6 pt-16"><h1 class="text-2xl font-semibold">Scii</h1><p class="text-zinc-500 mb-6">Last check: ${lastChecked?new Date(lastChecked).toLocaleTimeString():'—'}</p><div class="bg-zinc-900 rounded-2xl border border-zinc-800">${rows}</div><p class="text-xs text-zinc-600 mt-6 text-center"><a href="/status" class="underline">API</a> • fork on GitHub</p></div><script>setTimeout(()=>location.reload(),60000)</script></body></html>`, {headers:{"content-type":"text/html"}});
-    }
-    return new Response("Not found", {status:404});
-  },
-
-  async scheduled(event, env) {
-    const monitorsUrl = env.MONITORS_URL; // e.g. https://raw.githubusercontent.com/you/scii-config/main/monitors.json
-    const monitors = await fetch(monitorsUrl + "?t=" + Date.now(), {cf:{cacheTtl:0}}).then(r=>r.json()).catch(()=>[]);
-    const results = [];
-    for (const m of monitors) {
-      const t = Date.now();
-      let status="up", code=0;
-      try { const r = await fetch(m.url, {cf:{cacheTtl:0}}); code=r.status; status=r.ok?"up":"down"; } catch { status="down"; }
-      results.push({...m, status, code, responseTime:Date.now()-t, checkedAt:new Date().toISOString()});
-    }
-    await env.R2_BUCKET.put("status.json", JSON.stringify({lastChecked:new Date().toISOString(), monitors:results}));
+    // Serve the status page HTML
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wayfield Labs Status</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  body { font-family: 'Inter', sans-serif; background: #050507; }
+ .ambient {
+    background: radial-gradient(600px 300px at 50% -50px, rgba(80,200,120,0.06), transparent 60%), #050507;
   }
+ .card {
+    background: rgba(17,17,20,0.9);
+    border: 1px solid #27272a;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    transition: all 0.2s;
+  }
+ .card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+ .pulse-dot { position: relative; }
+ .pulse-dot::before {
+    content: ''; position: absolute; inset: -3px; border-radius: 50%;
+    background: currentColor; opacity: 0.3; animation: ping 2s infinite;
+  }
+  @keyframes ping { 75%,100% { transform: scale(1.6); opacity: 0; } }
+ .bar { width: 3px; height: 20px; background: #27272a; border-radius: 2px; transition: all 0.15s; }
+ .bar-up { background: #22c55e; }
+ .bar-down { background: #ef4444; }
+ .bar:hover { transform: scaleY(1.3); filter: brightness(1.2); }
+ .big-num {
+    background: linear-gradient(180deg, #fff, #a1a1aa);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+ .banner {
+    background: linear-gradient(90deg, rgba(34,197,94,0.1), transparent);
+    border-left: 3px solid #22c55e;
+  }
+</style>
+</head>
+<body class="ambient text-zinc-100">
+<div class="max-w-5xl mx-auto p-6">
+  <header class="flex justify-between items-center mb-6">
+    <div>
+      <h1 class="text-2xl font-semibold" style="letter-spacing:-0.02em">WAYFIELD <span class="text-zinc-600">/</span> Labs</h1>
+      <p class="text-sm text-zinc-400 flex items-center gap-2 mt-1">
+        <span class="pulse-dot w-2 h-2 rounded-full bg-green-500"></span>
+        System status • <span id="updated">loading...</span>
+      </p>
+    </div>
+    <div class="flex gap-2">
+      <button class="px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-sm hover:bg-zinc-800">Subscribe</button>
+    </div>
+  </header>
+
+  <div class="banner card rounded-xl p-4 mb-8 flex items-center gap-3">
+    <div class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
+      <svg width="20" height="20" fill="none" stroke="#22c55e" stroke-width="2"><path d="M5 10l3 3 7-7"/></svg>
+    </div>
+    <div>
+      <div class="font-medium">All Systems Operational</div>
+      <div class="text-sm text-zinc-400">All services running normally</div>
+    </div>
+  </div>
+
+  <div class="grid lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2 space-y-6" id="services">
+      <!-- Services loaded via JS -->
+    </div>
+
+    <div class="space-y-4">
+      <div class="card rounded-xl p-5">
+        <div class="text-4xl font-bold big-num" id="uptime">99.98%</div>
+        <div class="text-sm text-green-400 -mt-1">uptime</div>
+        <div class="text-xs text-zinc-500 mt-1">Last 90 days</div>
+        <div class="mt-4 space-y-2 text-sm">
+          <div class="flex justify-between"><span class="text-zinc-400">Incident-free</span><span id="incident-free">47 days</span></div>
+          <div class="flex justify-between"><span class="text-zinc-400">Mean response</span><span id="mean-response">28ms</span></div>
+        </div>
+      </div>
+      <div class="card rounded-xl p-5">
+        <h3 class="font-medium mb-3 text-sm">Regions</h3>
+        <div class="space-y-2" id="regions">
+          <!-- Regions loaded via JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+async function loadStatus() {
+  try {
+    const res = await fetch('/api/status');
+    const data = await res.json();
+
+    document.getElementById('updated').textContent = 'updated ' + data.lastUpdated;
+    document.getElementById('uptime').textContent = data.uptime + '%';
+    document.getElementById('incident-free').textContent = data.incidentFree + ' days';
+    document.getElementById('mean-response').textContent = data.meanResponse + 'ms';
+
+    const servicesEl = document.getElementById('services');
+    servicesEl.innerHTML = data.groups.map(group => \`
+      <div>
+        <h2 class="text-xs uppercase tracking-wider text-zinc-500 font-semibold mb-3">\${group.name}</h2>
+        <div class="card rounded-xl divide-y divide-zinc-800/60">
+          \${group.services.map(s => \`
+            <div class="p-4 hover:bg-zinc-900/40 transition">
+              <div class="flex justify-between items-start">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <span class="pulse-dot w-2 h-2 rounded-full bg-green-500"></span>
+                    <span class="font-medium">\${s.name}</span>
+                  </div>
+                  <div class="text-xs text-zinc-500 mt-1">\${s.url}</div>
+                </div>
+                <div class="flex gap-2">
+                  <span class="text-xs px-2 py-1 bg-zinc-800 rounded">\${s.ms}ms</span>
+                  <span class="text-xs px-2.5 py-1 bg-green-500/15 text-green-400 rounded-full">Operational</span>
+                </div>
+              </div>
+              <div class="mt-3 flex gap-">
+                \${s.history.map((h,i) => \`<div class="bar \${h?'bar-up':'bar-down'}" title="Day \${90-i}" style="animation-delay:\${i*3}ms"></div>\`).join('')}
+              </div>
+            </div>
+          \`).join('')}
+        </div>
+      </div>
+    \`).join('');
+
+    const regionsEl = document.getElementById('regions');
+    regionsEl.innerHTML = data.regions.map(r => \`
+      <div class="flex justify-between items-center p-2.5 bg-zinc-900/50 rounded-lg hover:bg-zinc-800/50">
+        <div class="flex items-center gap-2">
+          <span class="w-1.5 h-1.5 rounded-full bg-green-500" style="box-shadow:0 0 6px #22c55e"></span>
+          <span class="text-sm">\${r.name}</span>
+        </div>
+        <span class="text-xs text-zinc-400">\${r.ms}ms</span>
+      </div>
+    \`).join('');
+
+  } catch(e) {
+    console.error(e);
+  }
+}
+loadStatus();
+setInterval(loadStatus, 60000); // refresh every minute
+</script>
+</body>
+</html>`;
+
+    return new Response(html, {
+      headers: { 'content-type': 'text/html;charset=UTF-8' }
+    });
+  }
+}
+
+async function handleAPI(env) {
+  // Replace with real KV data or UptimeRobot API calls
+  const data = {
+    lastUpdated: '2m ago',
+    uptime: '99.98',
+    incidentFree: 47,
+    meanResponse: 28,
+    groups: [
+      {
+        name: 'Core Services',
+        services: [
+          { name: 'API', url: 'api.wayfield.dev', ms: 31, history: Array(90).fill(1) },
+          { name: 'Database', url: 'db.wayfield.dev', ms: 18, history: Array(90).fill(1) }
+        ]
+      },
+      {
+        name: 'Wayfield Apps',
+        services: [
+          { name: 'Dashboard', url: 'app.wayfield.dev', ms: 42, history: Array(90).fill(1) }
+        ]
+      }
+    ],
+    regions: [
+      { name: 'US East', ms: 34 },
+      { name: 'EU', ms: 42 }
+    ]
+  };
+
+  return Response.json(data, {
+    headers: { 'cache-control': 'public, max-age=60' }
+  });
 }
