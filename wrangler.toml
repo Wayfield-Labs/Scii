@@ -11,7 +11,7 @@ binding = "R2_BUCKET"
 bucket_name = "scii-status"
 
 [vars]
-MONITORS_URL = "https://raw.githubusercontent.com/wayfield-labs/scii-config/main/monitors.json"
+MONITORS_URL = "https://raw.githubusercontent.com/Wayfield-Labs/scii-config/main/monitors.json"
 
 [[routes]]
 pattern = "status.wayfield.dev"
