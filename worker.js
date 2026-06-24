@@ -1,17 +1,15 @@
 export default {
   async scheduled(event, env, ctx) {
-    // Your existing cron logic runs here every minute
     ctx.waitUntil(checkMonitors(env));
   },
 
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
-    
+
     if (url.pathname === '/api/status') {
       return handleAPI(env);
     }
 
-    // Serve your exact SCII status page
     const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -40,62 +38,4 @@ export default {
 <div class="max-w-5xl mx-auto p-6">
   <header class="flex justify-between items-center mb-6">
     <div>
-      <h1 class="text-2xl font-semibold" style="letter-spacing:-0.02em">WAYFIELD <span class="text-zinc-600">/</span> Labs</h1>
-      <p class="text-sm text-zinc-400 flex items-center gap-2 mt-1">
-        <span class="pulse-dot w-2 h-2 rounded-full bg-green-500"></span>
-        System status • <span id="updated">loading...</span>
-      </p>
-    </div>
-  </header>
-
-  <div class="banner card rounded-xl p-4 mb-8 flex items-center gap-3">
-    <div class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center">
-      <svg width="20" height="20" fill="none" stroke="#22c55e" stroke-width="2"><path d="M5 10l3 3 7-7"/></svg>
-    </div>
-    <div>
-      <div class="font-medium">All Systems Operational</div>
-      <div class="text-sm text-zinc-400">All services running normally</div>
-    </div>
-  </div>
-
-  <div class="grid lg:grid-cols-3 gap-6">
-    <div class="lg:col-span-2 space-y-6" id="services"></div>
-    <div class="space-y-4">
-      <div class="card rounded-xl p-5">
-        <div class="text-4xl font-bold big-num" id="uptime">99.98%</div>
-        <div class="text-sm text-green-400 -mt-1">uptime</div>
-        <div class="text-xs text-zinc-500 mt-1">Last 90 days</div>
-        <div class="mt-4 space-y-2 text-sm">
-          <div class="flex justify-between"><span class="text-zinc-400">Incident-free</span><span id="incident-free">47 days</span></div>
-          <div class="flex justify-between"><span class="text-zinc-400">Mean response</span><span id="mean-response">28ms</span></div>
-        </div>
-      <div class="card rounded-xl p-5">
-        <h3 class="font-medium mb-3 text-sm">Regions</h3>
-        <div class="space-y-2" id="regions"></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script>
-async function loadStatus() {
-  const res = await fetch('/api/status');
-  const d = await res.json();
-  document.getElementById('updated').textContent = 'updated ' + d.lastUpdated;
-  document.getElementById('uptime').textContent = d.uptime + '%';
-  document.getElementById('incident-free').textContent = d.incidentFree + ' days';
-  document.getElementById('mean-response').textContent = d.meanResponse + 'ms';
-
-  document.getElementById('services').innerHTML = d.groups.map(g => \`
-    <div>
-      <h2 class="text-xs uppercase tracking-wider text-zinc-500 font-semibold mb-3">\${g.name}</h2>
-      <div class="card rounded-xl divide-y divide-zinc-800/60">
-        \${g.services.map(s => \`
-          <div class="p-4 hover:bg-zinc-900/40 transition">
-            <div class="flex justify-between items-start">
-              <div>
-                <div class="flex items-center gap-2">
-                  <span class="pulse-dot w-2 h-2 rounded-full bg-green-500"></span>
-                  <span class="font-medium">\${s.name}</span>
-                </div>
-                <div class="text-xs text-zinc-
+      <h1 class="text-2xl font-semibold" style="letter
