@@ -13,6 +13,6 @@ bucket_name = "scii-status"
 [vars]
 MONITORS_URL = "https://raw.githubusercontent.com/wayfield-labs/scii-config/main/monitors.json"
 
-[routes]
+[[routes]]
 pattern = "status.wayfield.dev"
 zone_name = "wayfield.dev"
