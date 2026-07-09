@@ -194,17 +194,25 @@ Scii will now show a yellow banner with open incident issues at the top of your 
 
 ## Part 5: Customize branding
 
-In `worker.js`, find the `<h1>` tag inside the `<header>`:
+### Via environment variables (no code editing)
 
-```html
-<h1 class="text-2xl font-semibold" style="letter-spacing:-0.02em">WAYFIELD <span class="text-zinc-600">/</span> Labs</h1>
-```
+Go to Worker → Settings → Variables and add these:
 
-Change `WAYFIELD` and `Labs` to your brand name.
+| Variable | Default | What it does |
+|----------|---------|-------------|
+| `SITE_NAME` | `WAYFIELD / Labs` | Brand name in the header and footer |
+| `SITE_URL` | `https://wayfield.dev` | Link in the footer |
+| `CONTACT_EMAIL` | `hello@wayfield.dev` | Contact email in the footer |
+| `GROUP_NAME` | `Wayfield Services` | Service group label on the status page |
 
-To change the accent color, replace `#22c55e` (green) and `#f59e0b` (amber) in the CSS with your brand colors. The green is used for "Operational" status, amber for active incidents.
+Click Save and Deploy — no code changes needed.
 
-Redeploy the Worker.
+### Changing accent colors
+
+To change the green (Operational) and amber (warning) colors, edit `worker.js`:
+- Green: `#22c55e` → used for "All Systems Operational" and OK status
+- Amber: `#f59e0b` → used for "Partial Outage", incidents, and warning states
+- Red: `#ef4444` → used for "Down" service status
 
 ---
 
