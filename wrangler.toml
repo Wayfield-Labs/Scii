@@ -12,6 +12,11 @@ bucket_name = "scii-status"
 
 [vars]
 MONITORS_URL = "https://raw.githubusercontent.com/Wayfield-Labs/scii-config/main/monitors.json"
+# Optional branding - set these to customize the demo without editing code:
+# SITE_NAME = "WAYFIELD / Labs"
+# SITE_URL = "https://wayfield.dev"
+# CONTACT_EMAIL = "hello@wayfield.dev"
+# GROUP_NAME = "Wayfield Services"
 
 [[routes]]
 pattern = "status.wayfield.dev"

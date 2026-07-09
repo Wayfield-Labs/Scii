@@ -16,7 +16,7 @@ export default {
       });
     }
 
-    return new Response(getHTML(), {
+    return new Response(getHTML(env), {
       headers: { 'content-type': 'text/html;charset=UTF-8' }
     });
   }
@@ -178,7 +178,8 @@ async function checkMonitors(env) {
         totalUp,
         dayChecks,
         dayUp,
-        lastDate: today
+        lastDate: today,
+        lastChecked: now.toISOString()
       };
     }));
 
@@ -217,7 +218,7 @@ async function checkMonitors(env) {
       incidentHistory,
       groups: [
         {
-          name: 'Wayfield Services',
+          name: env.GROUP_NAME || 'Wayfield Services',
           services: results
         }
       ],
@@ -234,13 +235,18 @@ async function checkMonitors(env) {
   }
 }
 
-function getHTML() {
+function getHTML(env) {
+  var siteName = env.SITE_NAME || 'WAYFIELD / Labs';
+  var siteUrl = env.SITE_URL || 'https://wayfield.dev';
+  var contactEmail = env.CONTACT_EMAIL || 'hello@wayfield.dev';
+  var title = siteName + ' Status';
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Wayfield Labs Status</title>
+<title>${title}</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -269,9 +275,9 @@ body{font-family:'Inter',sans-serif;background:#050507}
 <div class="max-w-5xl mx-auto p-6 min-h-screen flex flex-col">
 <header class="flex justify-between items-center mb-6">
 <div>
-<h1 class="text-2xl font-semibold" style="letter-spacing:-0.02em">WAYFIELD <span class="text-zinc-600">/</span> Labs</h1>
+<h1 class="text-2xl font-semibold" style="letter-spacing:-0.02em">${siteName.replace('/', ' <span class="text-zinc-600">/</span> ')}</h1>
 <p class="text-sm text-zinc-400 flex items-center gap-2 mt-1">
-<span class="pulse-dot w-2 h-2 rounded-full bg-green-500"></span>
+<span id="header-dot" class="pulse-dot w-2 h-2 rounded-full bg-green-500"></span>
 System status • <span id="updated">loading...</span>
 </p>
 </div>
@@ -343,11 +349,11 @@ System status • <span id="updated">loading...</span>
 </div>
 
 <footer class="text-center text-xs text-zinc-600 pt-8 pb-4 mt-auto">
+<a href="${siteUrl}" class="hover:text-zinc-400 transition" target="_blank">${siteName}</a>
+<span class="mx-2">·</span>
+<a href="mailto:${contactEmail}" class="hover:text-zinc-400 transition">${contactEmail}</a>
+<span class="mx-2">·</span>
 <a href="https://github.com/wayfield-labs/scii" class="hover:text-zinc-400 transition" target="_blank">Powered by Scii</a>
-<span class="mx-2">·</span>
-<a href="https://github.com/wayfield-labs/scii-config" class="hover:text-zinc-400 transition" target="_blank">Configuration</a>
-<span class="mx-2">·</span>
-<a href="https://status.wayfield.dev" class="hover:text-zinc-400 transition">Status</a>
 </footer>
 </div>
 
@@ -356,6 +362,16 @@ function escHtml(str) {
   var div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
+}
+
+function timeAgo(isoString) {
+  if (!isoString) return '';
+  var seconds = Math.floor((Date.now() - new Date(isoString).getTime()) / 1000);
+  if (seconds < 5) return 'just now';
+  if (seconds < 60) return seconds + 's ago';
+  var minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return minutes + 'm ago';
+  return Math.floor(minutes / 60) + 'h ago';
 }
 
 async function loadStatus(){
@@ -399,7 +415,8 @@ async function loadStatus(){
       incidentBanner.classList.add('hidden');
     }
 
-    // --- Main status banner ---
+    // --- Header dot & Main status banner ---
+    var headerDot = document.getElementById('header-dot');
     var mainBanner = document.getElementById('banner');
     var bannerIconDot = document.getElementById('banner-icon-dot');
     var isWarning = hasIncidents || (!allUp && d.groups.length > 0);
@@ -413,11 +430,13 @@ async function loadStatus(){
       }
       mainBanner.className = 'banner-warning card rounded-xl p-4 mb-4 flex items-center gap-3';
       bannerIconDot.className = 'block w-5 h-5 rounded-full bg-amber-400 pulse-dot';
+      headerDot.className = 'pulse-dot w-2 h-2 rounded-full bg-amber-400';
     } else {
       document.getElementById('banner-title').textContent = 'All Systems Operational';
       document.getElementById('banner-desc').textContent = 'All services running normally';
       mainBanner.className = 'banner card rounded-xl p-4 mb-4 flex items-center gap-3';
       bannerIconDot.className = 'block w-5 h-5 rounded-full bg-green-500 pulse-dot';
+      headerDot.className = 'pulse-dot w-2 h-2 rounded-full bg-green-500';
     }
 
     // --- Services ---
@@ -438,6 +457,7 @@ async function loadStatus(){
               '<span class="font-medium">' + escHtml(s.name) + '</span>' +
               '</div>' +
               '<div class="text-xs text-zinc-500 mt-1">' + escHtml(s.url) + '</div>' +
+              '<div class="text-xs text-zinc-600 mt-0.5">checked <span class="service-time" data-time="' + s.lastChecked + '">' + timeAgo(s.lastChecked) + '</span></div>' +
               '</div>' +
               '<div class="flex items-center gap-2">' +
               '<span class="text-xs px-2 py-1 bg-zinc-800 rounded">' + s.ms + 'ms</span>' +
