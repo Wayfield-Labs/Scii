@@ -247,6 +247,7 @@ function getHTML(env) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${title}</title>
+<link id="favicon" rel="icon">
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -364,6 +365,11 @@ function escHtml(str) {
   return div.innerHTML;
 }
 
+function setFavicon(color) {
+  var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><circle cx="8" cy="8" r="7" fill="' + color + '" stroke="rgba(255,255,255,0.2)" stroke-width="0.5"/></svg>';
+  document.getElementById('favicon').href = 'data:image/svg+xml,' + encodeURIComponent(svg);
+}
+
 function timeAgo(isoString) {
   if (!isoString) return '';
   var seconds = Math.floor((Date.now() - new Date(isoString).getTime()) / 1000);
@@ -431,12 +437,14 @@ async function loadStatus(){
       mainBanner.className = 'banner-warning card rounded-xl p-4 mb-4 flex items-center gap-3';
       bannerIconDot.className = 'block w-5 h-5 rounded-full bg-amber-400 pulse-dot';
       headerDot.className = 'pulse-dot w-2 h-2 rounded-full bg-amber-400';
+      setFavicon('#f59e0b');
     } else {
       document.getElementById('banner-title').textContent = 'All Systems Operational';
       document.getElementById('banner-desc').textContent = 'All services running normally';
       mainBanner.className = 'banner card rounded-xl p-4 mb-4 flex items-center gap-3';
       bannerIconDot.className = 'block w-5 h-5 rounded-full bg-green-500 pulse-dot';
       headerDot.className = 'pulse-dot w-2 h-2 rounded-full bg-green-500';
+      setFavicon('#22c55e');
     }
 
     // --- Services ---
