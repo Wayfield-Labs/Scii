@@ -6,7 +6,9 @@ Deploy your own status page in ~10 minutes. No CLI, no servers.
 - `status.yourdomain.com` showing green/red badges
 - Updates every 60 seconds
 - Free on Cloudflare
-- GitHub Issues as incident management
+- GitHub Issues as incident management with active incident banner
+- Incident history timeline on your status page
+- 90-minute check history with per-service uptime bars
 - All data stored in git and R2
 
 ## Table of Contents
@@ -192,15 +194,15 @@ Scii will now show a yellow banner with open incident issues at the top of your 
 
 ## Part 5: Customize branding
 
-In `worker.js`, find:
+In `worker.js`, find the `<h1>` tag inside the `<header>`:
 
 ```html
-<span class="sora wayfield">WAYFIELD</span> / <a class="labs scii">Scii</a>
+<h1 class="text-2xl font-semibold" style="letter-spacing:-0.02em">WAYFIELD <span class="text-zinc-600">/</span> Labs</h1>
 ```
 
-Change `WAYFIELD` to your name.
+Change `WAYFIELD` and `Labs` to your brand name.
 
-Change color `#50c878` in CSS to your brand color.
+To change the accent color, replace `#22c55e` (green) and `#f59e0b` (amber) in the CSS with your brand colors. The green is used for "Operational" status, amber for active incidents.
 
 Redeploy the Worker.
 
