@@ -263,8 +263,6 @@ body{font-family:'Inter',sans-serif;background:#050507}
 .incident-timeline::before{content:'';position:absolute;left:7px;top:16px;bottom:16px;width:2px;background:#27272a;border-radius:1px}
 .bar-tooltip{position:relative}
 .bar-tooltip:hover::after{content:attr(data-tip);position:absolute;bottom:100%;left:50%;transform:translateX(-50%);padding:2px 6px;background:#18181b;border:1px solid #27272a;border-radius:4px;font-size:10px;white-space:nowrap;z-index:10;pointer-events:none}
-.pulse-glow{animation:glowPulse 2s ease-in-out infinite}
-@keyframes glowPulse{0%,100%{box-shadow:0 0 8px rgba(245,158,11,0.2)}50%{box-shadow:0 0 20px rgba(245,158,11,0.5)}}
 </style>
 </head>
 <body class="ambient text-zinc-100">
@@ -281,8 +279,8 @@ System status • <span id="updated">loading...</span>
 
 <!-- Main status banner -->
 <div id="banner" class="banner card rounded-xl p-4 mb-4 flex items-center gap-3">
-<div id="banner-icon" class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center shrink-0">
-<svg width="20" height="20" fill="none" stroke="#22c55e" stroke-width="2"><path d="M5 10l3 3 7-7"/></svg>
+<div id="banner-icon" class="w-10 h-10 flex items-center justify-center shrink-0">
+<span id="banner-icon-dot" class="block w-5 h-5 rounded-full bg-green-500 pulse-dot"></span>
 </div>
 <div>
 <div class="font-medium" id="banner-title">All Systems Operational</div>
@@ -403,8 +401,7 @@ async function loadStatus(){
 
     // --- Main status banner ---
     var mainBanner = document.getElementById('banner');
-    var bannerIcon = mainBanner.querySelector('svg');
-    var bannerIconContainer = document.getElementById('banner-icon');
+    var bannerIconDot = document.getElementById('banner-icon-dot');
     var isWarning = hasIncidents || (!allUp && d.groups.length > 0);
     if (isWarning) {
       if (hasIncidents) {
@@ -415,16 +412,12 @@ async function loadStatus(){
         document.getElementById('banner-desc').textContent = 'Some services are experiencing issues';
       }
       mainBanner.className = 'banner-warning card rounded-xl p-4 mb-4 flex items-center gap-3';
-      bannerIcon.setAttribute('stroke', '#f59e0b');
-      bannerIcon.innerHTML = '<path d="M12 9v3m0 4h.01"/>';
-      bannerIconContainer.classList.add('pulse-glow');
+      bannerIconDot.className = 'block w-5 h-5 rounded-full bg-amber-400 pulse-dot';
     } else {
       document.getElementById('banner-title').textContent = 'All Systems Operational';
       document.getElementById('banner-desc').textContent = 'All services running normally';
       mainBanner.className = 'banner card rounded-xl p-4 mb-4 flex items-center gap-3';
-      bannerIcon.setAttribute('stroke', '#22c55e');
-      bannerIcon.innerHTML = '<path d="M5 10l3 3 7-7"/>';
-      bannerIconContainer.classList.remove('pulse-glow');
+      bannerIconDot.className = 'block w-5 h-5 rounded-full bg-green-500 pulse-dot';
     }
 
     // --- Services ---
