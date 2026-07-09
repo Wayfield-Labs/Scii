@@ -372,10 +372,13 @@ async function loadStatus(){
       document.getElementById('incident-free').textContent = d.incidentFree + ' days';
     }
 
+    // --- Determine overall status ---
+    var allUp = d.groups.length > 0 && d.groups.every(function(g) { return g.services.every(function(s) { return s.up; }); });
+    var hasIncidents = d.activeIncidents && d.activeIncidents.length > 0;
+
     // --- Active Incidents Banner ---
     var incidentBanner = document.getElementById('incident-banner');
-    var mainBanner = document.getElementById('banner');
-    if (d.activeIncidents && d.activeIncidents.length > 0) {
+    if (hasIncidents) {
       document.getElementById('incident-banner-title').textContent =
         d.activeIncidents.length === 1 ? '1 Active Incident' : d.activeIncidents.length + ' Active Incidents';
       document.getElementById('incident-list').innerHTML = d.activeIncidents.map(function(inc) {
@@ -387,18 +390,31 @@ async function loadStatus(){
           '</a>';
       }).join('');
       incidentBanner.classList.remove('hidden');
+    } else {
+      incidentBanner.classList.add('hidden');
+    }
 
-      // Update main banner to show disruption
+    // --- Main status banner ---
+    var mainBanner = document.getElementById('banner');
+    var bannerIcon = mainBanner.querySelector('svg');
+    if (hasIncidents) {
       document.getElementById('banner-title').textContent = 'Service Disruption';
       document.getElementById('banner-desc').textContent = 'We are investigating reported issues';
       mainBanner.className = 'banner-warning card rounded-xl p-4 mb-4 flex items-center gap-3';
-      mainBanner.querySelector('svg').setAttribute('stroke', '#f59e0b');
+      bannerIcon.setAttribute('stroke', '#f59e0b');
+      bannerIcon.innerHTML = '<path d="M12 9v3m0 4h.01"/>';
+    } else if (!allUp && d.groups.length > 0) {
+      document.getElementById('banner-title').textContent = 'Partial Outage';
+      document.getElementById('banner-desc').textContent = 'Some services are experiencing issues';
+      mainBanner.className = 'banner-warning card rounded-xl p-4 mb-4 flex items-center gap-3';
+      bannerIcon.setAttribute('stroke', '#f59e0b');
+      bannerIcon.innerHTML = '<path d="M12 9v3m0 4h.01"/>';
     } else {
-      incidentBanner.classList.add('hidden');
-      mainBanner.className = 'banner card rounded-xl p-4 mb-4 flex items-center gap-3';
       document.getElementById('banner-title').textContent = 'All Systems Operational';
       document.getElementById('banner-desc').textContent = 'All services running normally';
-      mainBanner.querySelector('svg').setAttribute('stroke', '#22c55e');
+      mainBanner.className = 'banner card rounded-xl p-4 mb-4 flex items-center gap-3';
+      bannerIcon.setAttribute('stroke', '#22c55e');
+      bannerIcon.innerHTML = '<path d="M5 10l3 3 7-7"/>';
     }
 
     // --- Services ---
